@@ -13,8 +13,10 @@ app.use(cors());
 
 const PORT = process.env.PORT || 8000;
 
-app.get('/', (req, res) => {
-	res.send('Running');
+app.get('*', (req, res) => {
+	res.sendFile(
+        path.join(__dirname, "./client/build/index.html")
+      );
 });
 
 const users=[]
