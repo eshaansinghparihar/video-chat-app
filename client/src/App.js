@@ -1,10 +1,7 @@
 import Button from "@material-ui/core/Button"
 import IconButton from "@material-ui/core/IconButton"
-import TextField from "@material-ui/core/TextField"
-import AssignmentIcon from "@material-ui/icons/Assignment"
 import PhoneIcon from "@material-ui/icons/Phone"
 import React, { useEffect, useRef, useState } from "react"
-import { CopyToClipboard } from "react-copy-to-clipboard"
 import Peer from "simple-peer"
 import io from "socket.io-client"
 import "./App.css"
@@ -33,13 +30,13 @@ function App() {
 			setStream(stream)
 				myVideo.current.srcObject = stream
 		})
-   
-  socket.emit("registerUser", name);
-
+  
   socket.on("updateUserList", (updatedUsers) => {
     setUsers(updatedUsers);
     console.log(users)
-  });
+  });  
+
+  socket.emit("registerUser", name);
 
 	socket.on("me", (id) => {
       console.log('Me',id) 
@@ -70,9 +67,7 @@ function App() {
 			})
 		})
 		peer.on("stream", (stream) => {
-			
 				userVideo.current.srcObject = stream
-			
 		})
 		socket.on("callAccepted", (signal) => {
 			setCallAccepted(true)
@@ -124,8 +119,9 @@ function App() {
 
 	return (
 		<>
-			<h1 style={{ textAlign: "center", color: '#fff' }}>Video Chat App</h1>
+		<h1 style={{ textAlign: "center", color: '#fff' }}>Video Chat App</h1>
     {showApp ? 
+    //Call page
       <>
       <div className="container">
         <div className="video-container">
@@ -140,16 +136,16 @@ function App() {
         </div>
         <div className="myId">
         <h2>Online Users</h2>
-        <ul class="users">
+        <ul className="users">
           {users.filter((user)=>user.name!=='' && user.id!==me).map((user) => (
-            <button class="user" key={user.id} onClick={() => handleUserClick(user)}>
+            <button className="user" key={user.id} onClick={() => handleUserClick(user)}>
               { user.name }
             </button>
           ))}
         </ul>
           <div className="call-button">
             {callAccepted && !callEnded ? (
-              <Button variant="contained" color="secondary" onClick={leaveCall}>
+              <Button variant="contained" color="secondary" onClick={()=> leaveCall()}>
                 End Call
               </Button>
             ) : (
@@ -165,13 +161,14 @@ function App() {
         {receivingCall && !callAccepted ? (
             <div className="caller">
             <h1 >{name} is calling...</h1>
-            <Button variant="contained" color="primary" onClick={answerCall}>
+            <Button variant="contained" color="primary" onClick={()=>answerCall()}>
               Answer
             </Button>
           </div>
         ) : null}
       </div>
       </>:
+    //Login Page
       <>
         <div className="name">
         <input
