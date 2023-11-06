@@ -2,7 +2,6 @@ import Button from "@material-ui/core/Button"
 import IconButton from "@material-ui/core/IconButton"
 import PhoneIcon from "@material-ui/icons/Phone"
 import React, { useEffect, useRef, useState } from "react"
-import Peer from "simple-peer"
 import io from "socket.io-client"
 import "./App.css"
 
@@ -18,15 +17,17 @@ function App() {
 	const [ idToCall, setIdToCall ] = useState("")
 	const [ callEnded, setCallEnded] = useState(false)
 	const [ name, setName ] = useState("")
-  const [showApp, setShowApp]=useState(false)
-  const [users, setUsers] = useState([]);
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [ showApp, setShowApp]=useState(false)
+  const [ users, setUsers] = useState([]);
+  const [ selectedUser, setSelectedUser] = useState(null);
 	const myVideo = useRef()
 	const userVideo = useRef()
 	const connectionRef= useRef()
 
 	useEffect(() => {
-		showApp && navigator.mediaDevices.getUserMedia({ video: showApp, audio: showApp }).then((stream) => {
+		showApp && navigator.mediaDevices
+    .getUserMedia({ video: showApp, audio: false })
+    .then((stream) => {
 			setStream(stream)
 				myVideo.current.srcObject = stream
 		})
@@ -36,15 +37,13 @@ function App() {
     console.log(users)
   });  
 
-  socket.emit("registerUser", name);
-
 	socket.on("me", (id) => {
       console.log('Me',id) 
 			setMe(id)
 		})
 
   socket.on("callUser", (data) => {
-    console.log('Call User', data)
+    console.log('Call From User', data)
     setReceivingCall(true)
     setCaller(data.from)
     setName(data.name)
@@ -52,16 +51,22 @@ function App() {
   })
 	}, [showApp])
 
-	const callUser = (id) => {
-		const peer = new Peer({
+  useEffect(()=>{
+    socket.emit("registerUser", name);
+  },[name])
+
+	const callUser = (idToCall) => {
+		const peer = new window.SimplePeer({
 			initiator: true,
 			trickle: false,
 			stream: stream
 		})
-		peer.on("signal", (data) => {
+
+		peer.on("signal", (signalData) => {
+      console.log('Signal Data',signalData)
 			socket.emit("callUser", {
-				userToCall: id,
-				signalData: data,
+				userToCall: idToCall,
+				signalData: signalData,
 				from: me,
 				name: name
 			})
@@ -79,13 +84,14 @@ function App() {
 
 	const answerCall =() =>  {
 		setCallAccepted(true)
-		const peer = new Peer({
+		const peer = new window.SimplePeer({
 			initiator: false,
 			trickle: false,
 			stream: stream
 		})
-		peer.on("signal", (data) => {
-			socket.emit("answerCall", { signal: data, to: caller })
+		peer.on("signal", (signal) => {
+			socket.emit("answerCall", 
+      { signal: signal, to: caller })
 		})
 		peer.on("stream", (stream) => {
 			userVideo.current.srcObject = stream
@@ -115,7 +121,6 @@ function App() {
     setSelectedUser(user);
     setIdToCall(user.id)
   };
-
 
 	return (
 		<>
@@ -161,7 +166,7 @@ function App() {
         {receivingCall && !callAccepted ? (
             <div className="caller">
             <h1 >{name} is calling...</h1>
-            <Button variant="contained" color="primary" onClick={()=>answerCall()}>
+            <Button variant="contained" color="primary" onClick={()=> answerCall()}>
               Answer
             </Button>
           </div>
